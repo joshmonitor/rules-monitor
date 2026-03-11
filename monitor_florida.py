@@ -13,24 +13,35 @@ def get_latest_issue_id():
         response.raise_for_status()
         tree = html.fromstring(response.content)
         
-        # Look for any link containing 'IID=' (Issue ID) in the BigDoc directory
+        # Grab every single IID link on the page
         links = tree.xpath("//a[contains(@href, 'IID=')]/@href")
         
         if not links:
             print("DEBUG: Could not find any Issue IDs on the BigDoc page.")
             return None, None
             
-        latest_link = links[0]
+        highest_id = 0
+        best_link = ""
         
-        # Extract the ID number
-        match = re.search(r'IID=(\d+)', latest_link)
-        if match:
-            issue_id = match.group(1)
-            clean_link = latest_link.lstrip('/')
-            full_url = f"https://flrules.org/{clean_link}"
-            return issue_id, full_url
+        # Loop through all links to find the absolute highest ID number
+        for link in links:
+            match = re.search(r'IID=(\d+)', link)
+            if match:
+                current_num = int(match.group(1))
+                if current_num > highest_id:
+                    highest_id = current_num
+                    best_link = link
+                    
+        if highest_id == 0:
+            print("DEBUG: Found links, but couldn't extract any valid numbers.")
+            return None, None
             
-        return None, None
+        # We found the highest number! Format the URL and return it.
+        clean_link = best_link.lstrip('/')
+        full_url = f"https://flrules.org/BigDoc/{clean_link}"
+        
+        # Convert highest_id back to a string so it matches the text file
+        return str(highest_id), full_url
 
     except Exception as e:
         print(f"ERROR: {e}")
