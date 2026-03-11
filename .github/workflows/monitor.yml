@@ -33,14 +33,18 @@ jobs:
           # Add current day of the week (1=Monday, 7=Sunday)
           echo "day=$(date +%u)" >> $GITHUB_OUTPUT
 
-      - name: Commit Updated Hash
+      - name: Commit and Push Updated Hash
         if: steps.check.outputs.changed == 'true'
         run: |
           git config --global user.name "Hash-Bot"
           git config --global user.email "bot@github.com"
+          # 1. Stage the change
           git add last_hash.txt
-          git commit -m "Update Utah Index MD5 Hash"
-          git push
+          # 2. Create the commit
+          git commit -m "Update Utah Index MD5 Hash" || exit 0
+          # 3. Pull any changes you made on the web (prevents the [rejected] error)
+          git pull --rebase origin main
+          git push origin main
 
       - name: Send Change Alert Email
         if: steps.check.outputs.changed == 'true'
