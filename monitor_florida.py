@@ -3,7 +3,7 @@ import requests
 from lxml import html
 import os
 
-URL = "https://flrules.org/BigDoc/"
+URL = "https://flrules.org/"
 DB_FILE = "last_florida_issue.txt"
 
 def get_latest_issue_id():
