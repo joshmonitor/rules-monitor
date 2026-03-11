@@ -38,7 +38,7 @@ jobs:
       # --- 2. DOWNLOAD FILES ---
       - name: Download Latest Utah Excel File
         if: steps.check_utah.outputs.changed == 'true'
-        run: curl -o "Utah_Index_of_Changes.xlsx" "https://rules.utah.gov/wp-content/uploads/2026-Index-of-Changes.xlsx"
+        run: curl -o "Utah_Index_of_Changes.xlsx" "https://rules.utah.gov/wp-content/uploads/2027-Index-of-Changes.xlsx"
 
       # --- 3. COMMIT UPDATES ---
       - name: Commit and Push Updated Trackers
@@ -59,7 +59,7 @@ jobs:
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "🚨 ACTION REQUIRED: Utah Index Updated"
           html_body: "<p>The MD5 hash for the Utah Index of Changes has changed.</p><p><strong><a href='${{ steps.check_utah.outputs.file_url }}'>Click here to download the latest Excel file</a>.</strong></p>"
-          to: your-email@example.com
+          to: REDACTED
           from: State Rules Monitor
 
       - name: Send Florida Alert Email
@@ -72,5 +72,5 @@ jobs:
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "🌴 UPDATE: New Florida Register Posted"
           html_body: "<p>A new daily issue of the Florida Administrative Register has been posted to the BigDoc directory.</p><p><strong><a href='${{ steps.check_florida.outputs.fl_url }}'>Click here to view the new issue</a>.</strong></p>"
-          to: your-email@example.com
+          to: REDACTED
           from: State Rules Monitor
