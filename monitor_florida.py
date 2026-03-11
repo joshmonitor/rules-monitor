@@ -3,7 +3,7 @@ import requests
 from lxml import html
 import os
 
-URL = "https://flrules.org/"
+URL = "https://flrules.org/BigDoc"
 DB_FILE = "last_florida_issue.txt"
 
 def get_latest_issue_id():
@@ -27,7 +27,7 @@ def get_latest_issue_id():
         if match:
             issue_id = match.group(1)
             clean_link = latest_link.lstrip('/')
-            full_url = f"https://flrules.org/BigDoc/{clean_link}"
+            full_url = f"https://flrules.org/{clean_link}"
             return issue_id, full_url
             
         return None, None
