@@ -40,12 +40,16 @@ jobs:
         run: |
           git config --global user.name "Hash-Bot"
           git config --global user.email "bot@github.com"
-          # 1. Stage the change
+
+          # sync with the latest change from the web
+          git fetch origin main
+          git reset --mixed origin main
+
+          # Add the hash file and commit
           git add last_hash.txt
-          # 2. Create the commit
           git commit -m "Update Utah Index MD5 Hash" || exit 0
-          # 3. Pull any changes you made on the web (prevents the [rejected] error)
-          git pull --rebase origin main
+
+          # Push the clean, synced version
           git push origin main
 
       - name: Send Change Alert Email
