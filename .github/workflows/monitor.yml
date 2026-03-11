@@ -23,13 +23,13 @@ jobs:
       - name: Check Hash
         id: check
         run: |
-          # Capture output from the script
           OUTPUT=$(python monitor_hashes.py)
           echo "$OUTPUT"
-          # Export variables for the next steps
           if [[ $OUTPUT == *"CHANGE_DETECTED=true"* ]]; then
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
+          # Add current day of the week (1=Monday, 7=Sunday)
+          echo "day=$(date +%u)" >> $GITHUB_OUTPUT
 
       - name: Commit Updated Hash
         if: steps.check.outputs.changed == 'true'
@@ -40,7 +40,7 @@ jobs:
           git commit -m "Update Utah Index MD5 Hash"
           git push
 
-      - name: Send Mail
+      - name: Send Change Alert Email
         if: steps.check.outputs.changed == 'true'
         uses: dawidd6/action-send-mail@v3
         with:
@@ -48,7 +48,21 @@ jobs:
           server_port: 465
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "Utah Index of Changes Updated"
-          body: "The MD5 hash for the Utah Index of Changes has changed, indicating an update to the Excel file."
+          subject: "🚨 ACTION REQUIRED: Utah Index Updated"
+          body: "The MD5 hash for the Utah Index of Changes has changed. A new Excel file is likely available."
           to: your-email@example.com
-          from: GitHub Action Bot
+          from: Utah Rules Monitor
+
+      - name: Send Weekly Heartbeat Email
+        # Trigger if it's Monday (day 1) AND no change was detected (to avoid double emails)
+        if: steps.check.outputs.day == '3' && steps.check.outputs.changed != 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "✅ Weekly Heartbeat: Utah Monitor Active"
+          body: "This is your weekly confirmation that the Utah Rules Monitor is online. No changes were detected this week."
+          to: your-email@example.com
+          from: Utah Rules Monitor
