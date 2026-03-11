@@ -38,7 +38,7 @@ def get_latest_issue_id():
             
         # We found the highest number! Format the URL and return it.
         clean_link = best_link.lstrip('/')
-        full_url = f"https://flrules.org/BigDoc/{clean_link}"
+        full_url = f"https://flrules.org/{clean_link}"
         
         # Convert highest_id back to a string so it matches the text file
         return str(highest_id), full_url
