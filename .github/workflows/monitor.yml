@@ -26,14 +26,7 @@ jobs:
 
       - name: Check Hash
         id: check
-        run: |
-          OUTPUT=$(python monitor_hashes.py)
-          echo "$OUTPUT"
-          if [[ $OUTPUT == *"CHANGE_DETECTED=true"* ]]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          fi
-          # Add current day of the week (1=Monday, 7=Sunday)
-          echo "day=$(date +%u)" >> $GITHUB_OUTPUT
+        run: python monitor_hashes.py
 
       - name: Commit and Push Updated Hash
         if: steps.check.outputs.changed == 'true'
@@ -51,7 +44,7 @@ jobs:
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "🚨 ACTION REQUIRED: Utah Index Updated"
-          body: "The MD5 hash for the Utah Index of Changes has changed. A new Excel file is likely available."
+          html_body: "<p>The MD5 hash for the Utah Index of Changes has changed.</p><p><strong><a href='${{ steps.check.outputs.file_url }}'>Click here to download the latest Excel file</a>.</strong></p>"
           to: joshuab@stpub.com
           from: Utah Rules Monitor
 
