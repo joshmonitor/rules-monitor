@@ -64,5 +64,5 @@ jobs:
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "✅ Weekly Heartbeat: Utah Monitor Active"
           body: "This is your weekly confirmation that the Utah Rules Monitor is online. No changes were detected this week."
-          to: your-email@example.com
+          to: joshua.bowman636@gmail.com
           from: Utah Rules Monitor
