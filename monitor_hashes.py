@@ -10,18 +10,26 @@ def get_current_hash():
     response = requests.get(URL)
     tree = html.fromstring(response.content)
     
-    # XPath to find the <li> containing our target year and extract the text
-    # The structure is typically: <li>2027 Index of Changes... (MD5 Hash: [hash]);</li>
-    xpath_query = f"//li[contains(text(), '{TARGET_YEAR} Index of Changes')]/text()"
-    content_list = tree.xpath(xpath_query)
+    # NEW STRATEGY: Find the link to the Excel file for the year first.
+    # Then, look at the parent element (the <li>) for the MD5 string.
+    xpath_query = f"//a[contains(@href, '{TARGET_YEAR}') and contains(@href, '.xlsx')]/.."
+    nodes = tree.xpath(xpath_query)
     
-    if not content_list:
+    if not nodes:
+        print(f"DEBUG: Could not find a link containing '{TARGET_YEAR}' and '.xlsx'")
         return None
         
-    full_text = "".join(content_list)
+    # Get all text inside that <li>, even if it's broken up by tags
+    full_text = nodes[0].text_content()
+    print(f"DEBUG: Found text: {full_text}") # This helps you see what it found in the logs
+    
     if "MD5 Hash:" in full_text:
-        # Extract the 32-character hex string
-        return full_text.split("MD5 Hash:")[1].strip().split()[0].rstrip(');.')
+        # Split by "MD5 Hash:", take the right side, and clean up extra characters
+        parts = full_text.split("MD5 Hash:")
+        hash_part = parts[1].strip()
+        # Extract just the first 32 characters (the length of an MD5 hash)
+        return hash_part[:32]
+        
     return None
 
 def main():
@@ -47,4 +55,5 @@ def main():
         print("CHANGE_DETECTED=false")
 
 if __name__ == "__main__":
+
     main()
