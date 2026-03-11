@@ -8,35 +8,42 @@ DB_FILE = "last_hash.txt"
 TARGET_YEAR = "2027"  # Update this as the years progress
 
 def get_current_hash():
-    # Use a real browser User-Agent to avoid being blocked
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124 Safari/537.36'}
-    response = requests.get(URL, headers=headers)
-    tree = html.fromstring(response.content)
+    # Headers to look like a real browser
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'}
     
-    # 1. Look for the list item (li) that contains both your year and 'XLSX'
-    # This covers the exact line you pasted.
-    xpath_query = f"//li[contains(., '{TARGET_YEAR}') and contains(., 'XLSX')]"
-    nodes = tree.xpath(xpath_query)
-    
-    if not nodes:
-        print(f"DEBUG: Could not find the line for {TARGET_YEAR}")
+    try:
+        response = requests.get(URL, headers=headers)
+        response.raise_for_status()
+        tree = html.fromstring(response.content)
+        
+        # 1. Target the paragraph <p> that contains the link for the target year
+        # We look for an <a> tag with the year in the href, then go to the parent <p>
+        xpath_query = f"//p[a[contains(@href, '{TARGET_YEAR}')]]"
+        nodes = tree.xpath(xpath_query)
+        
+        if not nodes:
+            print(f"DEBUG: Could not find the <p> block containing '{TARGET_YEAR}'")
+            return None
+            
+        # 2. Flatten all the <span> tags into one string
+        # This turns the messy HTML into: "2027 Index of Changes (XLSX) -- ... (MD5 Hash: 4a152...);"
+        full_text = nodes[0].text_content()
+        print(f"DEBUG: Scanned text: {full_text}")
+        
+        # 3. Extract the 32-character MD5 hash
+        match = re.search(r'([a-fA-F0-9]{32})', full_text)
+        
+        if match:
+            found_hash = match.group(1)
+            print(f"DEBUG: Successfully extracted MD5: {found_hash}")
+            return found_hash
+            
+        print("DEBUG: Found the paragraph, but the MD5 hash was missing or formatted incorrectly.")
         return None
-        
-    # 2. Extract the text content of the entire line
-    full_text = nodes[0].text_content()
-    print(f"DEBUG: Scanned text: {full_text}")
-    
-    # 3. Use Regex to find exactly 32 hex characters
-    # This looks for any sequence of 32 characters (0-9 or a-f)
-    match = re.search(r'([a-fA-F0-9]{32})', full_text)
-    
-    if match:
-        extracted_hash = match.group(1)
-        print(f"DEBUG: Extracted MD5: {extracted_hash}")
-        return extracted_hash
-        
-    print("DEBUG: Found the correct line, but no MD5 hash was detected inside it.")
-    return None
+
+    except Exception as e:
+        print(f"ERROR during request: {e}")
+        return None
 
 def main():
     current_hash = get_current_hash()
@@ -63,5 +70,6 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
 
