@@ -52,7 +52,7 @@ jobs:
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "🚨 ACTION REQUIRED: Utah Index Updated"
           body: "The MD5 hash for the Utah Index of Changes has changed. A new Excel file is likely available."
-          to: your-email@example.com
+          to: REDACTED
           from: Utah Rules Monitor
 
       - name: Send Weekly Heartbeat Email
@@ -66,5 +66,5 @@ jobs:
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "✅ Weekly Heartbeat: Utah Monitor Active"
           body: "This is your weekly confirmation that the Utah Rules Monitor is online. No changes were detected this week."
-          to: joshua.bowman636@gmail.com
+          to: REDACTED
           from: Utah Rules Monitor
