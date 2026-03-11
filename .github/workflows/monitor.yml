@@ -1,0 +1,54 @@
+name: Utah Rules MD5 Monitor
+
+on:
+  schedule:
+    - cron: '0 13 * * *' # Runs daily at 1:00 PM UTC
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: pip install requests lxml
+
+      - name: Check Hash
+        id: check
+        run: |
+          # Capture output from the script
+          OUTPUT=$(python monitor_hashes.py)
+          echo "$OUTPUT"
+          # Export variables for the next steps
+          if [[ $OUTPUT == *"CHANGE_DETECTED=true"* ]]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit Updated Hash
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          git config --global user.name "Hash-Bot"
+          git config --global user.email "bot@github.com"
+          git add last_hash.txt
+          git commit -m "Update Utah Index MD5 Hash"
+          git push
+
+      - name: Send Mail
+        if: steps.check.outputs.changed == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "Utah Index of Changes Updated"
+          body: "The MD5 hash for the Utah Index of Changes has changed, indicating an update to the Excel file."
+          to: your-email@example.com
+          from: GitHub Action Bot
