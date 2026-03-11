@@ -37,20 +37,10 @@ jobs:
 
       - name: Commit and Push Updated Hash
         if: steps.check.outputs.changed == 'true'
-        run: |
-          git config --global user.name "Hash-Bot"
-          git config --global user.email "bot@github.com"
-
-          # sync with the latest change from the web
-          git fetch origin main
-          git reset --mixed origin main
-
-          # Add the hash file and commit
-          git add last_hash.txt
-          git commit -m "Update Utah Index MD5 Hash" || exit 0
-
-          # Push the clean, synced version
-          git push origin main
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update Utah Index MD5 Hash"
+          file_pattern: "last_hash.txt"
 
       - name: Send Change Alert Email
         if: steps.check.outputs.changed == 'true'
