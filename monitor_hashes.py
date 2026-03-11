@@ -1,6 +1,7 @@
 import requests
 from lxml import html
 import os
+import re
 
 URL = "https://rules.utah.gov/publications/index-of-changes/"
 DB_FILE = "last_hash.txt"
@@ -10,26 +11,29 @@ def get_current_hash():
     response = requests.get(URL)
     tree = html.fromstring(response.content)
     
-    # NEW STRATEGY: Find the link to the Excel file for the year first.
-    # Then, look at the parent element (the <li>) for the MD5 string.
-    xpath_query = f"//a[contains(@href, '{TARGET_YEAR}') and contains(@href, '.xlsx')]/.."
+    # 1. Find the parent <li> that contains the link to the Excel file
+    # This is more stable than looking for text strings.
+    xpath_query = f"//li[contains(., '{TARGET_YEAR}') and contains(., '.xlsx')]"
     nodes = tree.xpath(xpath_query)
     
     if not nodes:
-        print(f"DEBUG: Could not find a link containing '{TARGET_YEAR}' and '.xlsx'")
+        print(f"DEBUG: Could not find a list item for {TARGET_YEAR}")
         return None
         
-    # Get all text inside that <li>, even if it's broken up by tags
+    # 2. Get all text inside that line
     full_text = nodes[0].text_content()
-    print(f"DEBUG: Found text: {full_text}") # This helps you see what it found in the logs
+    print(f"DEBUG: Found line text: {full_text}")
     
-    if "MD5 Hash:" in full_text:
-        # Split by "MD5 Hash:", take the right side, and clean up extra characters
-        parts = full_text.split("MD5 Hash:")
-        hash_part = parts[1].strip()
-        # Extract just the first 32 characters (the length of an MD5 hash)
-        return hash_part[:32]
+    # 3. Use Regex to find exactly 32 hex characters (the MD5)
+    # This ignores spaces, semicolons, and parentheses automatically.
+    match = re.search(r'([a-fA-F0-9]{32})', full_text)
+    
+    if match:
+        found_hash = match.group(1)
+        print(f"DEBUG: Successfully extracted hash: {found_hash}")
+        return found_hash
         
+    print("DEBUG: Found the line, but no 32-character MD5 hash was inside it.")
     return None
 
 def main():
@@ -57,3 +61,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+
