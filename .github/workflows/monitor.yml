@@ -1,8 +1,9 @@
-name: Utah Rules MD5 Monitor
+name: State Rules Monitor
 
 on:
   schedule:
-    - cron: '0 13 * * *' # Runs daily at 1:00 PM UTC
+    # Runs at 13:00 UTC (9:00 AM EST) Monday through Friday
+    - cron: '0 13 * * 1-5'
   workflow_dispatch:
 
 jobs:
@@ -10,33 +11,46 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
       - name: Install Dependencies
         run: pip install requests lxml
 
-      - name: Check Hash
-        id: check
-        run: python monitor_hashes.py
+      # --- 1. RUN SCRIPTS ---
+      - name: Check Utah Hash
+        id: check_utah
+        run: python monitor_utah.py
 
-      - name: Commit and Push Updated Hash
-        if: steps.check.outputs.changed == 'true'
+      - name: Check Florida Issue
+        id: check_florida
+        run: python monitor_florida.py
+
+      # --- 2. DOWNLOAD FILES ---
+      - name: Download Latest Utah Excel File
+        if: steps.check_utah.outputs.changed == 'true'
+        run: curl -o "Utah_Index_of_Changes.xlsx" "https://rules.utah.gov/wp-content/uploads/2026-Index-of-Changes.xlsx"
+
+      # --- 3. COMMIT UPDATES ---
+      - name: Commit and Push Updated Trackers
+        if: steps.check_utah.outputs.changed == 'true' || steps.check_florida.outputs.fl_changed == 'true'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Update Utah Index MD5 Hash"
-          file_pattern: "last_hash.txt"
+          commit_message: "Automated Update: State Rule Trackers synced"
+          file_pattern: "last_hash.txt Utah_Index_of_Changes.xlsx last_florida_issue.txt"
 
-      - name: Send Change Alert Email
-        if: steps.check.outputs.changed == 'true'
+      # --- 4. EMAIL ALERTS ---
+      - name: Send Utah Alert Email
+        if: steps.check_utah.outputs.changed == 'true'
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -44,20 +58,19 @@ jobs:
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "🚨 ACTION REQUIRED: Utah Index Updated"
-          html_body: "<p>The MD5 hash for the Utah Index of Changes has changed.</p><p><strong><a href='${{ steps.check.outputs.file_url }}'>Click here to download the latest Excel file</a>.</strong></p>"
-          to: REDACTED
-          from: Utah Rules Monitor
+          html_body: "<p>The MD5 hash for the Utah Index of Changes has changed.</p><p><strong><a href='${{ steps.check_utah.outputs.file_url }}'>Click here to download the latest Excel file</a>.</strong></p>"
+          to: your-email@example.com
+          from: State Rules Monitor
 
-      - name: Send Weekly Heartbeat Email
-        # Trigger if it's Monday (day 1) AND no change was detected (to avoid double emails)
-        if: steps.check.outputs.day == '3' && steps.check.outputs.changed != 'true'
+      - name: Send Florida Alert Email
+        if: steps.check_florida.outputs.fl_changed == 'true'
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
           server_port: 465
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "✅ Weekly Heartbeat: Utah Monitor Active"
-          body: "This is your weekly confirmation that the Utah Rules Monitor is online. No changes were detected this week."
-          to: REDACTED
-          from: Utah Rules Monitor
+          subject: "🌴 UPDATE: New Florida Register Posted"
+          html_body: "<p>A new daily issue of the Florida Administrative Register has been posted to the BigDoc directory.</p><p><strong><a href='${{ steps.check_florida.outputs.fl_url }}'>Click here to view the new issue</a>.</strong></p>"
+          to: your-email@example.com
+          from: State Rules Monitor
