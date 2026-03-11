@@ -8,32 +8,34 @@ DB_FILE = "last_hash.txt"
 TARGET_YEAR = "2027"  # Update this as the years progress
 
 def get_current_hash():
-    response = requests.get(URL)
+    # Use a real browser User-Agent to avoid being blocked
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124 Safari/537.36'}
+    response = requests.get(URL, headers=headers)
     tree = html.fromstring(response.content)
     
-    # 1. Find the parent <li> that contains the link to the Excel file
-    # This is more stable than looking for text strings.
-    xpath_query = f"//li[contains(., '{TARGET_YEAR}') and contains(., '.xlsx')]"
+    # 1. Look for the list item (li) that contains both your year and 'XLSX'
+    # This covers the exact line you pasted.
+    xpath_query = f"//li[contains(., '{TARGET_YEAR}') and contains(., 'XLSX')]"
     nodes = tree.xpath(xpath_query)
     
     if not nodes:
-        print(f"DEBUG: Could not find a list item for {TARGET_YEAR}")
+        print(f"DEBUG: Could not find the line for {TARGET_YEAR}")
         return None
         
-    # 2. Get all text inside that line
+    # 2. Extract the text content of the entire line
     full_text = nodes[0].text_content()
-    print(f"DEBUG: Found line text: {full_text}")
+    print(f"DEBUG: Scanned text: {full_text}")
     
-    # 3. Use Regex to find exactly 32 hex characters (the MD5)
-    # This ignores spaces, semicolons, and parentheses automatically.
+    # 3. Use Regex to find exactly 32 hex characters
+    # This looks for any sequence of 32 characters (0-9 or a-f)
     match = re.search(r'([a-fA-F0-9]{32})', full_text)
     
     if match:
-        found_hash = match.group(1)
-        print(f"DEBUG: Successfully extracted hash: {found_hash}")
-        return found_hash
+        extracted_hash = match.group(1)
+        print(f"DEBUG: Extracted MD5: {extracted_hash}")
+        return extracted_hash
         
-    print("DEBUG: Found the line, but no 32-character MD5 hash was inside it.")
+    print("DEBUG: Found the correct line, but no MD5 hash was detected inside it.")
     return None
 
 def main():
@@ -61,4 +63,5 @@ def main():
 if __name__ == "__main__":
 
     main()
+
 
