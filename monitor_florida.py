@@ -15,7 +15,14 @@ def get_session():        #Retries logic for network failures
     session = requests.Session()
     retry = Retry(total=3, backoff_factor=2, status_forcelist=[500, 502, 503, 504])
     session.mount("http://", HTTPAdapter(max_retries=retry))
-    session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'})
+    session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+    })
     return session
 
 def get_latest_issue_id(session):
