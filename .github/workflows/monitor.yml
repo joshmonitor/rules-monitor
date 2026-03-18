@@ -13,17 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
+          cache: 'pip'
 
       - name: Install Dependencies
         run: pip install requests lxml
@@ -40,7 +39,7 @@ jobs:
       # --- 2. DOWNLOAD FILES ---
       - name: Download Latest Utah Excel File
         if: steps.check_utah.outputs.changed == 'true'
-        run: curl -o "Utah_Index_of_Changes.xlsx" "https://rules.utah.gov/wp-content/uploads/2027-Index-of-Changes.xlsx"
+        run: curl -o "Utah_Index_of_Changes.xlsx" "${{ steps.check_utah.outputs.file_url }}"
 
       # --- 3. COMMIT UPDATES ---
       - name: Commit and Push Updated Trackers
