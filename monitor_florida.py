@@ -18,7 +18,7 @@ def get_session():        #Retries logic for network failures
     session.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'})
     return session
 
-def get_latest_issue_id():
+def get_latest_issue_id(session):
     try:
         response = requests.get(URL, headers=headers)
         response.raise_for_status()
