@@ -1,7 +1,8 @@
 import re
+import sys
+import os
 import requests
 from lxml import html
-import os
 
 URL = "https://rules.utah.gov/publications/index-of-changes/"
 DB_FILE = "last_hash.txt"
@@ -10,66 +11,64 @@ TARGET_YEAR = "2027"
 def get_current_data():
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'}
     try:
-        response = requests.get(URL, headers=headers)
+        response = requests.get(URL, headers=headers, timeout=30)
         response.raise_for_status()
         tree = html.fromstring(response.content)
-        
-        # 1. Target the paragraph containing our year
+
         xpath_query = f"//p[a[contains(@href, '{TARGET_YEAR}')]]"
         nodes = tree.xpath(xpath_query)
-        
+
         if not nodes:
             print(f"DEBUG: Could not find the <p> block for '{TARGET_YEAR}'")
             return None, None
-            
-        # 2. Extract the actual URL using XPath
-        # We look for the anchor tag inside the paragraph and grab its href attribute
+
         links = nodes[0].xpath(".//a[contains(@href, '.xlsx')]/@href")
         file_url = links[0] if links else "https://rules.utah.gov/publications/index-of-changes/"
-        
-        # 3. Extract the 32-character MD5 hash
+
         full_text = nodes[0].text_content()
         match = re.search(r'([a-fA-F0-9]{32})', full_text)
         found_hash = match.group(1) if match else None
-        
+
+        if not found_hash:
+            print("DEBUG: Could not extract MD5 hash from page.")
+            return None, None
+
         return found_hash, file_url
 
     except Exception as e:
         print(f"ERROR: {e}")
         return None, None
 
-def main():
-    current_hash, file_url = get_current_data()
-    if not current_hash:
-        print("Could not find hash on the page.")
-        return
-
+def read_last_hash():
     if os.path.exists(DB_FILE):
         with open(DB_FILE, "r") as f:
-            old_hash = f.read().strip()
-    else:
-        old_hash = ""
+            return f.read().strip()
+    return ""
 
-    # Connect directly to GitHub Actions output system
+def write_outputs(outputs: dict):
     env_file = os.getenv('GITHUB_OUTPUT')
+    if env_file:
+        with open(env_file, "a") as f:
+            for key, value in outputs.items():
+                f.write(f"{key}={value}\n")
+
+def main():
+    current_hash, file_url = get_current_data()
+
+    if not current_hash:
+        print("ERROR: Could not find hash on the page.")
+        sys.exit(1)
+
+    old_hash = read_last_hash()
 
     if current_hash != old_hash:
-        print(f"CHANGE_DETECTED=true")
-        print(f"Extracted URL: {file_url}")
-        
+        print(f"CHANGE_DETECTED: New hash {current_hash} (was {old_hash})")
         with open(DB_FILE, "w") as f:
             f.write(current_hash)
-            
-        # Push variables directly to the workflow steps
-        if env_file:
-            with open(env_file, "a") as f:
-                f.write("changed=true\n")
-                f.write(f"file_url={file_url}\n")
+        write_outputs({"changed": "true", "file_url": file_url})
     else:
-        print("No changes.")
-        if env_file:
-            with open(env_file, "a") as f:
-                f.write("changed=false\n")
+        print(f"No changes. Current hash: {current_hash}")
+        write_outputs({"changed": "false"})
 
 if __name__ == "__main__":
     main()
