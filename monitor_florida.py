@@ -20,7 +20,7 @@ def get_session():        #Retries logic for network failures
 
 def get_latest_issue_id(session):
     try:
-        response = requests.get(URL, headers=headers)
+        response = requests.get(URL, timeout=30)
         response.raise_for_status()
         tree = html.fromstring(response.content)
         links = tree.xpath("//a[contains(@href, 'IID=')]/@href")         # Grab every single IID link on the page
