@@ -1,18 +1,17 @@
 import re
 import sys
+import os
+import requests
 from lxml import html
-from common import get_session, write_outputs
 
 URL = "https://rules.utah.gov/publications/index-of-changes/"
 DB_FILE = "last_hash.txt"
 TARGET_YEAR = "2027"
 
-HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'}
-
-
-def get_current_data(session):
+def get_current_data():
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'}
     try:
-        response = session.get(URL, headers=HEADERS, timeout=30)
+        response = requests.get(URL, headers=headers, timeout=30)
         response.raise_for_status()
         tree = html.fromstring(response.content)
 
@@ -40,18 +39,21 @@ def get_current_data(session):
         print(f"ERROR: {e}")
         return None, None
 
-
 def read_last_hash():
-    try:
+    if os.path.exists(DB_FILE):
         with open(DB_FILE, "r") as f:
             return f.read().strip()
-    except FileNotFoundError:
-        return ""
+    return ""
 
+def write_outputs(outputs: dict):
+    env_file = os.getenv('GITHUB_OUTPUT')
+    if env_file:
+        with open(env_file, "a") as f:
+            for key, value in outputs.items():
+                f.write(f"{key}={value}\n")
 
 def main():
-    session = get_session()
-    current_hash, file_url = get_current_data(session)
+    current_hash, file_url = get_current_data()
 
     if not current_hash:
         print("ERROR: Could not find hash on the page.")
