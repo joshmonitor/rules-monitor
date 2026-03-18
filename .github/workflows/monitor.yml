@@ -61,7 +61,7 @@ jobs:
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "Utah Index Updated"
           html_body: "<p>The MD5 hash for the Utah Index of Changes has changed.</p><p><strong><a href='${{ steps.check_utah.outputs.file_url }}'>Click here to download the latest Excel file</a>.</strong></p>"
-          to: REDACTED
+          to: ${{ secrets.ALERT_EMAIL_TO }}
           from: State Rules Monitor
 
       - name: Send Florida Alert Email
