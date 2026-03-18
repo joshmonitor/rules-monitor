@@ -3,8 +3,10 @@ name: State Rules Monitor
 on:
   schedule:
     # Runs at 14:32 UTC (9:00 AM EST) Monday through Friday
-    - cron: '32 14 * * 1-5'
+    - cron: '00 14 * * 1-5'
   workflow_dispatch:
+  repository_dispatch:
+    types: [trigger-monitor]
 
 jobs:
   monitor:
