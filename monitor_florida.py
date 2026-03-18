@@ -1,19 +1,25 @@
 import re
 import sys
+import os
 import requests
 from lxml import html
 from urllib.parse import urljoin
-from common import get_session, write_outputs
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 URL = "https://flrules.org/BigDoc"
 DB_FILE = "last_florida_issue.txt"
 
-HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'}
+def get_session():
+    session = requests.Session()
+    retry = Retry(total=3, backoff_factor=2, status_forcelist=[500, 502, 503, 504])
+    session.mount("https://", HTTPAdapter(max_retries=retry))
+    return session
 
-
-def get_latest_issue_id(session):
+def get_latest_issue_id():
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'}
     try:
-        response = session.get(URL, headers=HEADERS, timeout=30)
+        response = requests.get(URL, headers=headers, timeout=30)
         response.raise_for_status()
         tree = html.fromstring(response.content)
         links = tree.xpath("//a[contains(@href, 'IID=')]/@href")
@@ -44,18 +50,22 @@ def get_latest_issue_id(session):
         print(f"ERROR: {e}")
         return None, None
 
-
 def read_last_id():
-    try:
+    if os.path.exists(DB_FILE):
         with open(DB_FILE, "r") as f:
             return f.read().strip()
-    except FileNotFoundError:
-        return ""
+    return ""
 
+def write_outputs(outputs: dict):
+    env_file = os.getenv('GITHUB_OUTPUT')
+    if env_file:
+        with open(env_file, "a") as f:
+            for key, value in outputs.items():
+                f.write(f"{key}={value}\n")
 
 def main():
     session = get_session()
-    current_id, file_url = get_latest_issue_id(session)
+    current_id, file_url = get_latest_issue_id()
 
     if not current_id:
         print("ERROR: Could not find Florida Issue ID.")
