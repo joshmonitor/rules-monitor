@@ -7,39 +7,30 @@ from urllib.parse import urljoin
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-
 URL = "https://flrules.org/BigDoc"
 DB_FILE = "last_florida_issue.txt"
 
-def get_session():        #Retries logic for network failures
+def get_session():
     session = requests.Session()
     retry = Retry(total=3, backoff_factor=2, status_forcelist=[500, 502, 503, 504])
     session.mount("https://", HTTPAdapter(max_retries=retry))
-    session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-    })
     return session
 
-def get_latest_issue_id(session):
+def get_latest_issue_id():
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'}
     try:
-        response = requests.get(URL, timeout=30)
+        response = requests.get(URL, headers=headers, timeout=30)
         response.raise_for_status()
         tree = html.fromstring(response.content)
-        links = tree.xpath("//a[contains(@href, 'IID=')]/@href")         # Grab every single IID link on the page
-        
+        links = tree.xpath("//a[contains(@href, 'IID=')]/@href")
+
         if not links:
             print("DEBUG: Could not find any Issue IDs on the BigDoc page.")
             return None, None
-            
+
         highest_id = 0
         best_link = ""
-        
-        # Loop through all links to find the absolute highest ID number
+
         for link in links:
             match = re.search(r'IID=(\d+)', link)
             if match:
@@ -47,25 +38,25 @@ def get_latest_issue_id(session):
                 if current_num > highest_id:
                     highest_id = current_num
                     best_link = link
-                    
+
         if highest_id == 0:
             print("DEBUG: Found links, but couldn't extract any valid numbers.")
             return None, None
-            
+
         full_url = urljoin("https://flrules.org/", best_link)
-        return str(highest_id), full_url                # Convert highest_id back to a string so it matches the text file
+        return str(highest_id), full_url
 
     except Exception as e:
         print(f"ERROR: {e}")
         return None, None
-        
+
 def read_last_id():
     if os.path.exists(DB_FILE):
         with open(DB_FILE, "r") as f:
             return f.read().strip()
     return ""
 
-def write_outputs(outputs: dict):        #Collects outputs in a dict
+def write_outputs(outputs: dict):
     env_file = os.getenv('GITHUB_OUTPUT')
     if env_file:
         with open(env_file, "a") as f:
@@ -74,7 +65,7 @@ def write_outputs(outputs: dict):        #Collects outputs in a dict
 
 def main():
     session = get_session()
-    current_id, file_url = get_latest_issue_id(session)
+    current_id, file_url = get_latest_issue_id()
 
     if not current_id:
         print("ERROR: Could not find Florida Issue ID.")
