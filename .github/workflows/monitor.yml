@@ -37,6 +37,10 @@ jobs:
         id: check_florida
         run: python monitor_florida.py
 
+      - name: Check New York Issue
+        id: check_ny
+        run: python monitor_ny.py
+
       # --- 2. DOWNLOAD FILES ---
       - name: Download Latest Utah Excel File
         if: steps.check_utah.outputs.changed == 'true'
@@ -44,11 +48,11 @@ jobs:
 
       # --- 3. COMMIT UPDATES ---
       - name: Commit and Push Updated Trackers
-        if: steps.check_utah.outputs.changed == 'true' || steps.check_florida.outputs.fl_changed == 'true'
+        if: steps.check_utah.outputs.changed == 'true' || steps.check_florida.outputs.fl_changed == 'true' || steps.check_ny.outputs.ny_changed == 'true'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Automated Update: State Rule Trackers synced"
-          file_pattern: "last_hash.txt Utah_Index_of_Changes.xlsx last_florida_issue.txt"
+          file_pattern: "last_hash.txt Utah_Index_of_Changes.xlsx last_florida_issue.txt last_ny_issue.txt"
 
       # --- 4. EMAIL ALERTS ---
       - name: Send Utah Alert Email
@@ -74,5 +78,18 @@ jobs:
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "New Florida Register Posted"
           html_body: "<p>A new daily issue of the Florida Administrative Register has been posted to the BigDoc directory.</p><p><strong><a href='${{ steps.check_florida.outputs.fl_url }}'>Click here to view the new issue</a>.</strong></p>"
+          to: ${{ secrets.ALERT_EMAIL_TO }}
+          from: State Rules Monitor
+
+      - name: Send New York Alert Email
+        if: steps.check_ny.outputs.ny_changed == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "New NY State Register Posted"
+          html_body: "<p>A new weekly issue of the New York State Register has been posted.</p><p><strong><a href='${{ steps.check_ny.outputs.ny_url }}'>Click here to view the new issue</a>.</strong></p>"
           to: ${{ secrets.ALERT_EMAIL_TO }}
           from: State Rules Monitor
