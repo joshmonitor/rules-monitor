@@ -86,18 +86,20 @@ def scrape_section_iii(issue_id):
                 rule_num = rule_link_node[0].text_content().strip()
                 if not rule_href.startswith("http"):
                     rule_href = BASE_URL + rule_href
-                type_parts = type_text.replace(rule_num, "").strip()
-                section_cell = f'{type_parts} <a href="{rule_href}">{rule_num}</a>'
+                notice_type = type_text.replace(rule_num, "").strip()
+                rule_num_cell = f'<a href="{rule_href}">{rule_num}</a>'
             else:
-                section_cell = type_text
+                notice_type = type_text
+                rule_num_cell = ""
 
-            description = cells[3].text_content().strip()
+            rule_title = cells[3].text_content().strip()
 
             table_rows_html += (
                 f'<tr>'
                 f'<td style="padding:6px 10px;"><a href="{view_href}">View Text</a></td>'
-                f'<td style="padding:6px 10px;">{section_cell}</td>'
-                f'<td style="padding:6px 10px;">{description}</td>'
+                f'<td style="padding:6px 10px;">{notice_type}</td>'
+                f'<td style="padding:6px 10px;">{rule_num_cell}</td>'
+                f'<td style="padding:6px 10px;">{rule_title}</td>'
                 f'</tr>'
             )
 
@@ -108,8 +110,9 @@ def scrape_section_iii(issue_id):
             f'<thead style="background:#f0f0f0;">'
             f'<tr>'
             f'<th style="padding:6px 10px;">Notice</th>'
-            f'<th style="padding:6px 10px;">Section / Rule</th>'
-            f'<th style="padding:6px 10px;">Description</th>'
+            f'<th style="padding:6px 10px;">Type</th>'
+            f'<th style="padding:6px 10px;">Rule Number</th>'
+            f'<th style="padding:6px 10px;">Rule Title</th>'
             f'</tr>'
             f'</thead>'
             f'<tbody>{table_rows_html}</tbody>'
