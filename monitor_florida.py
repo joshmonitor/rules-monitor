@@ -17,10 +17,10 @@ def get_session():
     session.mount("https://", HTTPAdapter(max_retries=retry))
     return session
 
-def get_latest_issue_id():
+def get_latest_issue_id(session):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'}
     try:
-        response = requests.get(URL, headers=headers, timeout=30)
+        response = session.get(URL, headers=headers, timeout=30)
         response.raise_for_status()
         tree = html.fromstring(response.content)
         links = tree.xpath("//a[contains(@href, 'IID=')]/@href")
@@ -51,12 +51,12 @@ def get_latest_issue_id():
         print(f"ERROR: {e}")
         return None, None
 
-def scrape_section_iii(issue_id):
+def scrape_section_iii(session, issue_id):
     """Fetch Section III entries for the given issue ID and return an HTML table string."""
     url = f"{BASE_URL}/BigDoc/View_Section.asp?Issue={issue_id}&Section=3"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'}
     try:
-        response = requests.get(url, headers=headers, timeout=30)
+        response = session.get(url, headers=headers, timeout=30)
         response.raise_for_status()
         tree = html.fromstring(response.content)
 
@@ -143,7 +143,8 @@ def write_outputs(outputs: dict):
                     f.write(f"{key}={value}\n")
 
 def main():
-    current_id, file_url = get_latest_issue_id()
+    session = get_session()
+    current_id, file_url = get_latest_issue_id(session)
 
     if not current_id:
         print("ERROR: Could not find Florida Issue ID.")
@@ -156,7 +157,7 @@ def main():
         with open(DB_FILE, "w") as f:
             f.write(current_id)
 
-        section_iii_html = scrape_section_iii(current_id)
+        section_iii_html = scrape_section_iii(session, current_id)
         write_outputs({
             "fl_changed": "true",
             "fl_url": file_url,

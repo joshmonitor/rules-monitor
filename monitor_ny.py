@@ -16,10 +16,10 @@ def get_session():
     session.mount("https://", HTTPAdapter(max_retries=retry))
     return session
 
-def get_latest_issue_id():
+def get_latest_issue_id(session):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'}
     try:
-        response = requests.get(URL, headers=headers, timeout=30)
+        response = session.get(URL, headers=headers, timeout=30)
         response.raise_for_status()
         tree = html.fromstring(response.content)
         links = tree.xpath("//a[contains(translate(., 'ISSUE', 'issue'), 'issue')]")
@@ -70,7 +70,7 @@ def write_outputs(outputs: dict):
 
 def main():
     session = get_session()
-    current_id, file_url = get_latest_issue_id()
+    current_id, file_url = get_latest_issue_id(session)
 
     if not current_id:
         print("ERROR: Could not find NY Issue ID.")
