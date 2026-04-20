@@ -7,9 +7,6 @@ on:
   workflow_dispatch:
   repository_dispatch:
     types: [trigger-monitor]
-  push:
-    branches:
-      - claude/add-ny-monitor-FXaic
 
 jobs:
   monitor:

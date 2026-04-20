@@ -3,15 +3,24 @@ import sys
 import os
 import requests
 from lxml import html
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 URL = "https://rules.utah.gov/publications/index-of-changes/"
 DB_FILE = "last_hash.txt"
 TARGET_YEAR = "2027"
 
+def get_session():
+    session = requests.Session()
+    retry = Retry(total=3, backoff_factor=2, status_forcelist=[500, 502, 503, 504])
+    session.mount("https://", HTTPAdapter(max_retries=retry))
+    return session
+
 def get_current_data():
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'}
+    session = get_session()
     try:
-        response = requests.get(URL, headers=headers, timeout=30)
+        response = session.get(URL, headers=headers, timeout=30)
         response.raise_for_status()
         tree = html.fromstring(response.content)
 
