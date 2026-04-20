@@ -80,7 +80,10 @@ jobs:
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "New Florida Register Posted"
-          html_body: "<p>A new daily issue of the Florida Administrative Register has been posted to the BigDoc directory.</p><p><strong><a href='${{ steps.check_florida.outputs.fl_url }}'>Click here to view the new issue</a>.</strong></p>"
+          html_body: |
+            <p>A new daily issue of the Florida Administrative Register has been posted.</p>
+            <p><strong><a href="${{ steps.check_florida.outputs.fl_url }}">Click here to view the full issue</a>.</strong></p>
+            ${{ steps.check_florida.outputs.fl_section_iii }}
           to: ${{ secrets.ALERT_EMAIL_TO }}
           from: State Rules Monitor
 
